@@ -1,0 +1,11 @@
+# Ignore log files
+*.csv
+gi
+
+
+# Ignore node_modules folder
+C:\Users\Cynthia\Documents\Moringa_Assignments\Phase_5_Project\Data\broad_reddit_search_with_labels.csv
+
+# Ignore all .env files
+
+
