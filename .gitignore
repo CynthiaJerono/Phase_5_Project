@@ -1,6 +1,5 @@
 # Ignore log files
-*.csv
-gi
+*.csv 
 
 
 # Ignore node_modules folder
