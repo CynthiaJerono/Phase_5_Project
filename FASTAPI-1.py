@@ -1,8 +1,9 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from pydantic import BaseModel
 from typing import List, Optional
 import joblib
 import pandas as pd
+import io
 
 # Load your model
 model = joblib.load("random_forest_pipeline_model.pkl")
@@ -10,7 +11,7 @@ model = joblib.load("random_forest_pipeline_model.pkl")
 # Initialize FastAPI app
 app = FastAPI()
 
-# Define a structure for the input data
+# Define a structure for the JSON input data (if needed)
 class RedditPost(BaseModel):
     title: Optional[str] = None
     subreddit: Optional[str] = None
@@ -26,10 +27,18 @@ class RedditPost(BaseModel):
     cleaned_comment_body: Optional[str] = ""
     post_num_comments: Optional[int] = 0
 
+# Endpoint to process uploaded CSV file
 @app.post("/predict/")
-def predict(posts: List[RedditPost]):
-    # Convert input data to DataFrame
-    data = pd.DataFrame([post.dict() for post in posts])
+async def predict(file: UploadFile = File(...)):
+    # Check if the file is a CSV
+    if file.content_type != "text/csv":
+        raise HTTPException(status_code=400, detail="File must be a CSV")
+
+    # Read the CSV file into a DataFrame
+    contents = await file.read()
+    data = pd.read_csv(io.StringIO(contents.decode("utf-8")))
+
+    # Fill missing values if needed
     data.fillna({
         'post_score': 0,
         'comment_score': 0,
@@ -51,5 +60,6 @@ def predict(posts: List[RedditPost]):
     result = [label_map[pred] for pred in predictions]
 
     return {"predictions": result}
+
 
 
