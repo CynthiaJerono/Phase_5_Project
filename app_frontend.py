@@ -2,6 +2,13 @@ import streamlit as st
 import requests
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib
+
+# Ensure matplotlib uses the correct backend
+matplotlib.use("Agg")
+
+# Base URL for the FastAPI server
+API_BASE_URL = "http://127.0.0.1:8000"
 
 # Streamlit app title and description
 st.title("Mental Health Detection via Online Textual Conversations")
@@ -17,22 +24,24 @@ if user_id and not user_id.isdigit():
 # Section to display user history and mental health trend if a valid user ID is provided
 if user_id and user_id.isdigit():
     try:
-        response = requests.get(f"http://127.0.0.1:8000/history/{user_id}")
+        st.write("Fetching user history...")
+        response = requests.get(f"{API_BASE_URL}/history/{user_id}")
+        
         if response.status_code == 200:
             data = response.json()
-            if data['history']:
+            if "history" in data and data["history"]:  # Check if 'history' exists and is not empty
                 # Create a DataFrame from the history data
-                history_df = pd.DataFrame(data['history'])
+                history_df = pd.DataFrame(data["history"])
                 
                 # Format timestamp for readability
-                history_df['timestamp'] = pd.to_datetime(history_df['timestamp']).dt.strftime("%Y-%m-%d %H:%M:%S")
+                history_df["timestamp"] = pd.to_datetime(history_df["timestamp"]).dt.strftime("%Y-%m-%d %H:%M:%S")
                 st.write("User Prediction History:")
                 st.dataframe(history_df)
 
                 # Plot mental health label trends over time
                 plt.figure()  # Clear the plot
-                label_counts = history_df['label'].value_counts()
-                label_counts.plot(kind='bar', title='Mental Health Labels Frequency')
+                label_counts = history_df["label"].value_counts()
+                label_counts.plot(kind="bar", title="Mental Health Labels Frequency")
                 plt.xlabel("Label")
                 plt.ylabel("Frequency")
                 st.pyplot(plt)
@@ -50,8 +59,12 @@ text = st.text_area("Enter text here")
 if st.button("Predict"):
     if text and user_id and user_id.isdigit():
         try:
-            # Post request to FastAPI to make a prediction
-            response = requests.post("http://127.0.0.1:8000/predict", json={"text": text, "user_id": int(user_id)})
+            st.write("Submitting prediction request...")
+            response = requests.post(
+                f"{API_BASE_URL}/predict", 
+                json={"text": text, "user_id": int(user_id)}
+            )
+            
             if response.status_code == 200:
                 label = response.json().get("label")
                 st.write(f"Predicted Label: **{label}**")
